@@ -120,7 +120,7 @@
         "decision_threshold": 0.4
       },
       "accuracy": 0.745,
-      "disparate_impact_ratio": 1.039,
+      "disparate_impact_ratio": 1.0391,
       "equalized_odds_difference": 0.15,
       "selection_rates": {
         "female": 0.95,
@@ -194,7 +194,7 @@
         "decision_threshold": 0.6
       },
       "accuracy": 0.695,
-      "disparate_impact_ratio": 0.9185,
+      "disparate_impact_ratio": 0.9184,
       "equalized_odds_difference": 0.175,
       "selection_rates": {
         "female": 0.6167,
@@ -307,7 +307,7 @@
         "objective": "accuracy_score"
       },
       "accuracy": 0.76,
-      "disparate_impact_ratio": 0.9584,
+      "disparate_impact_ratio": 0.9583,
       "equalized_odds_difference": 0.075,
       "selection_rates": {
         "female": 0.7667,
