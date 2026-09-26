@@ -1,0 +1,342 @@
+{
+  "dataset": {
+    "name": "UCI Statlog German Credit",
+    "url": "https://archive.ics.uci.edu/dataset/144/statlog+german+credit+data",
+    "rows_total": 1000,
+    "target": "1 = approved (good credit), 0 = denied (bad credit)",
+    "overall_approval_rate": 0.7,
+    "sex_distribution": {
+      "female": 310,
+      "male": 690
+    },
+    "feature_note": "The 11 human-meaningful notice features are seeded deterministic proxies derived from the real German Credit codes (see shap_prep.map_row); they are identical to the Phase 3 adverse-action build."
+  },
+  "sensitive_attribute": {
+    "name": "sex",
+    "source_column": "personal_status",
+    "mapping": {
+      "A91": "male (divorced/separated)",
+      "A92": "female (divorced/separated/married)",
+      "A93": "male (single)",
+      "A94": "male (married/widowed)",
+      "A95": "female (single)"
+    },
+    "mapping_source": "Standard UCI German Credit personal_status code semantics, as used in the fairlearn/aif360 literature on this dataset. Note: code A95 (female single) is documented but absent from the downloaded file; it would map to female if present.",
+    "absent_codes": [
+      "A95"
+    ],
+    "why_chosen": "Sex is the canonical protected attribute for credit-lending fairness audits (e.g. US ECOA) and the standard choice in published fairness work on German Credit. Age binned at 25 was rejected: the under-25 subgroup is roughly half the size of the female subgroup, which would make disparity estimates noisier on the 200-row test set.",
+    "included_as_model_feature": false,
+    "privileged_group": "male",
+    "unprivileged_group": "female",
+    "privilege_rule": "Group with the higher selection rate at the base operating point (threshold 0.5) is designated privileged; applied uniformly to all points."
+  },
+  "model": {
+    "type": "LogisticRegression",
+    "C": 1.0,
+    "max_iter": 2000,
+    "solver": "lbfgs (sklearn default)",
+    "scaling": "StandardScaler fit on train only",
+    "features": [
+      "credit_utilization_pct",
+      "late_payments_30d",
+      "debt_to_income_pct",
+      "annual_income",
+      "employment_length_months",
+      "loan_duration_months",
+      "housing_code",
+      "residence_years",
+      "age_years",
+      "existing_credits",
+      "people_liable"
+    ],
+    "sensitive_attribute_included": false,
+    "train_rows": 800,
+    "test_rows": 200,
+    "test_split": "80/20 stratified on target",
+    "random_state": 42
+  },
+  "seeds": {
+    "numpy_sklearn_random_state": 42,
+    "split": 42,
+    "note": "map_row uses per-row deterministic hashing. ThresholdOptimizer.fit is deterministic; its randomized-interpolation predict() was called with random_state=42. No unseeded randomness anywhere; two reruns produced byte-identical JSON."
+  },
+  "metrics_definitions": {
+    "accuracy": "Fraction of correct predictions on the 200-row test set.",
+    "disparate_impact_ratio": "selection_rate(unprivileged) / selection_rate(privileged). 1.0 = perfect parity; the EEOC 4/5 rule flags values below 0.8.",
+    "equalized_odds_difference": "max(|TPR_unpriv - TPR_priv|, |FPR_unpriv - FPR_priv|). 0.0 = equalized odds.",
+    "selection_rate": "(TP + FP) / group n, i.e. fraction predicted 'approved'.",
+    "tpr": "TP / (TP + FN).",
+    "fpr": "FP / (FP + TN).",
+    "rounding": "All floats rounded to 4 decimals."
+  },
+  "caveats": [
+    "Test set is only 200 rows; the female test subgroup is ~60 rows, so disparity estimates carry small-sample noise. Results demonstrate the tradeoff machinery, not a production-grade fairness claim.",
+    "German Credit (1994) encodes dated gender/family categories; 'sex' here is a binary proxy derived from the personal_status code, not a rich demographic measure.",
+    "ThresholdOptimizer fits group-specific thresholds on the training set and applies them to the test set; its points are post-processing mitigations of the same base model, not retrained models.",
+    "aif360 0.6.1 was installed successfully; metrics were computed directly with sklearn/fairlearn primitives for full determinism and auditability."
+  ],
+  "tradeoff_points": [
+    {
+      "name": "threshold_sweep",
+      "detail": {
+        "decision_threshold": 0.3
+      },
+      "accuracy": 0.725,
+      "disparate_impact_ratio": 1.037,
+      "equalized_odds_difference": 0.125,
+      "selection_rates": {
+        "female": 1.0,
+        "male": 0.9643
+      },
+      "per_group": {
+        "female": {
+          "n": 60,
+          "tp": 40,
+          "fp": 20,
+          "tn": 0,
+          "fn": 0,
+          "selection_rate": 1.0,
+          "tpr": 1.0,
+          "fpr": 1.0,
+          "accuracy": 0.6667
+        },
+        "male": {
+          "n": 140,
+          "tp": 100,
+          "fp": 35,
+          "tn": 5,
+          "fn": 0,
+          "selection_rate": 0.9643,
+          "tpr": 1.0,
+          "fpr": 0.875,
+          "accuracy": 0.75
+        }
+      }
+    },
+    {
+      "name": "threshold_sweep",
+      "detail": {
+        "decision_threshold": 0.4
+      },
+      "accuracy": 0.745,
+      "disparate_impact_ratio": 1.039,
+      "equalized_odds_difference": 0.15,
+      "selection_rates": {
+        "female": 0.95,
+        "male": 0.9143
+      },
+      "per_group": {
+        "female": {
+          "n": 60,
+          "tp": 39,
+          "fp": 18,
+          "tn": 2,
+          "fn": 1,
+          "selection_rate": 0.95,
+          "tpr": 0.975,
+          "fpr": 0.9,
+          "accuracy": 0.6833
+        },
+        "male": {
+          "n": 140,
+          "tp": 98,
+          "fp": 30,
+          "tn": 10,
+          "fn": 2,
+          "selection_rate": 0.9143,
+          "tpr": 0.98,
+          "fpr": 0.75,
+          "accuracy": 0.7714
+        }
+      }
+    },
+    {
+      "name": "threshold_sweep",
+      "detail": {
+        "decision_threshold": 0.5
+      },
+      "accuracy": 0.735,
+      "disparate_impact_ratio": 0.9174,
+      "equalized_odds_difference": 0.13,
+      "selection_rates": {
+        "female": 0.7667,
+        "male": 0.8357
+      },
+      "per_group": {
+        "female": {
+          "n": 60,
+          "tp": 32,
+          "fp": 14,
+          "tn": 6,
+          "fn": 8,
+          "selection_rate": 0.7667,
+          "tpr": 0.8,
+          "fpr": 0.7,
+          "accuracy": 0.6333
+        },
+        "male": {
+          "n": 140,
+          "tp": 93,
+          "fp": 24,
+          "tn": 16,
+          "fn": 7,
+          "selection_rate": 0.8357,
+          "tpr": 0.93,
+          "fpr": 0.6,
+          "accuracy": 0.7786
+        }
+      }
+    },
+    {
+      "name": "threshold_sweep",
+      "detail": {
+        "decision_threshold": 0.6
+      },
+      "accuracy": 0.695,
+      "disparate_impact_ratio": 0.9185,
+      "equalized_odds_difference": 0.175,
+      "selection_rates": {
+        "female": 0.6167,
+        "male": 0.6714
+      },
+      "per_group": {
+        "female": {
+          "n": 60,
+          "tp": 26,
+          "fp": 11,
+          "tn": 9,
+          "fn": 14,
+          "selection_rate": 0.6167,
+          "tpr": 0.65,
+          "fpr": 0.55,
+          "accuracy": 0.5833
+        },
+        "male": {
+          "n": 140,
+          "tp": 79,
+          "fp": 15,
+          "tn": 25,
+          "fn": 21,
+          "selection_rate": 0.6714,
+          "tpr": 0.79,
+          "fpr": 0.375,
+          "accuracy": 0.7429
+        }
+      }
+    },
+    {
+      "name": "threshold_sweep",
+      "detail": {
+        "decision_threshold": 0.7
+      },
+      "accuracy": 0.635,
+      "disparate_impact_ratio": 0.875,
+      "equalized_odds_difference": 0.13,
+      "selection_rates": {
+        "female": 0.45,
+        "male": 0.5143
+      },
+      "per_group": {
+        "female": {
+          "n": 60,
+          "tp": 20,
+          "fp": 7,
+          "tn": 13,
+          "fn": 20,
+          "selection_rate": 0.45,
+          "tpr": 0.5,
+          "fpr": 0.35,
+          "accuracy": 0.55
+        },
+        "male": {
+          "n": 140,
+          "tp": 63,
+          "fp": 9,
+          "tn": 31,
+          "fn": 37,
+          "selection_rate": 0.5143,
+          "tpr": 0.63,
+          "fpr": 0.225,
+          "accuracy": 0.6714
+        }
+      }
+    },
+    {
+      "name": "threshold_optimizer",
+      "detail": {
+        "constraint": "demographic_parity",
+        "objective": "accuracy_score"
+      },
+      "accuracy": 0.75,
+      "disparate_impact_ratio": 1.0,
+      "equalized_odds_difference": 0.175,
+      "selection_rates": {
+        "female": 0.8,
+        "male": 0.8
+      },
+      "per_group": {
+        "female": {
+          "n": 60,
+          "tp": 34,
+          "fp": 14,
+          "tn": 6,
+          "fn": 6,
+          "selection_rate": 0.8,
+          "tpr": 0.85,
+          "fpr": 0.7,
+          "accuracy": 0.6667
+        },
+        "male": {
+          "n": 140,
+          "tp": 91,
+          "fp": 21,
+          "tn": 19,
+          "fn": 9,
+          "selection_rate": 0.8,
+          "tpr": 0.91,
+          "fpr": 0.525,
+          "accuracy": 0.7857
+        }
+      }
+    },
+    {
+      "name": "threshold_optimizer",
+      "detail": {
+        "constraint": "equalized_odds",
+        "objective": "accuracy_score"
+      },
+      "accuracy": 0.76,
+      "disparate_impact_ratio": 0.9584,
+      "equalized_odds_difference": 0.075,
+      "selection_rates": {
+        "female": 0.7667,
+        "male": 0.8
+      },
+      "per_group": {
+        "female": {
+          "n": 60,
+          "tp": 34,
+          "fp": 12,
+          "tn": 8,
+          "fn": 6,
+          "selection_rate": 0.7667,
+          "tpr": 0.85,
+          "fpr": 0.6,
+          "accuracy": 0.7
+        },
+        "male": {
+          "n": 140,
+          "tp": 91,
+          "fp": 21,
+          "tn": 19,
+          "fn": 9,
+          "selection_rate": 0.8,
+          "tpr": 0.91,
+          "fpr": 0.525,
+          "accuracy": 0.7857
+        }
+      }
+    }
+  ]
+}
